@@ -1,19 +1,23 @@
-if(request.method == "GET" ){
-  // Can we make our content type plaintext out here?
-  var contentType = {"Content-type": "application/json"};
-   if(request.url=="/"){
-      response.writeHead(200, contentType);
-      response.end("Hello World");
-   }else{
-      response.writeHead(403, contentType);
-      response.end("Hello World");
-   }
-}else{
-    response.writeHead(403, contentType);
-    response.end();
-}
+{ 
+
+  method: 'POST',
+  
+  uri: 'http://127.0.0.1:3000/classes/messages',
+  
+  json: {
+        username: 'Jono',
+        message: 'Do my bidding!'
+  }
+
+};
 
 
-console.log("req method: ", request.method);
-console.log("req url : ", request.url);
-console.log("req data: ", request.data);
+ it('should accept POST requests to /send', function(done) {
+    
+    var requestParams = {
+      method: 'POST',
+      uri: 'http://127.0.0.1:3000/classes/messages',
+      json: {
+        username: 'Jono',
+        message: 'Do my bidding!'}
+    };

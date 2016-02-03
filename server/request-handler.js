@@ -35,13 +35,28 @@ var requestHandler = function(request, response) {
   var responseCases = {
     'GET': getCase,
     'POST': postCase,
-    'PUT': putCase
   };
 
-  responseCases[request.method](request.url);
+  var getDataCases = {
+    messages : function(){
+      var numMessages = 0;
+      return responseData.filter(function(e){
+        if (numMessages < 100){
+          return true;
+        }
+      })
+    },
+    rooms : function(room){
+      return responseData.filter(function(e){
+        return !!e[room];
+      });
+    }
+  };
+  
+  var res = responseCases[request.method](request);
   // See the note below about CORS headers.
   var headers = defaultCorsHeaders;
-
+  
   // Tell the client we are sending them plain text.
   //
   // You will need to change this if you are sending something
@@ -51,6 +66,7 @@ var requestHandler = function(request, response) {
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
+  // request.method==="GET" && !!request.url && (statusCode=333);
   response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
@@ -60,7 +76,10 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end(JSON.stringify());
+  response.end(JSON.stringify(res));
+  
+  // Messages look like this:
+  //
   // {
   //   results: [{
   //     username: 'user',
@@ -69,28 +88,57 @@ var requestHandler = function(request, response) {
   //   }]
   // }
   
-  function postCase(){ 
-    statusCode = 201;
-  };
-  function putCase(){ };
-
-  function getCase (url) {
-    // Check if valid request
-    if(url.substr(0,9)==="/classes/"){
-      // do stuff
-    }else{
+  function postCase(request){
+    if (request.url === undefined) {
       statusCode = 404;
+    } else {
+      statusCode = 201;
+    
+      request.on('data', function(dataIn) {
+        data.responseData.push(dataIn);
+      });
+   }
+  };
+  
+  
+  function getCase (request) {
+    // Check if valid request
+    if (request.url === undefined) {
+      statusCode = 404;
+    } else {
+      // If valid request, make status ok (200)
+      statusCode = 200;
       
+      var urlObj = parseURL(request.url);
+      
+      var unsortedResults = getDataCases[urlObj.category](urlObj.room);
+
+      var sortedResults = unsortedResults.sort(function (a, b) {
+        return a.createdAt - b.createdAt;
+      });
+      
+      return {
+        results: sortedResults
+      };
     }
-    // if( queryParams in )
-      // Check url
-      // Check data-type?
-      // If it doesn't exist
-      
-    // If valid request, make status ok (200)
-    statusCode = 200;    
   }
+  
+  function parseURL(url){
+    var urlPieces = url.split('/');
+    var root = urlPieces[1];
+    var category = urlPieces[2];
+    var room = urlPieces[3] === undefined ? null : urlPieces[3];
+    
+    return {
+      root: root,
+      category: category,
+      room: room
+    }
+  }
+// End of requestHandler
 };
+
+
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
